@@ -1,4 +1,4 @@
-from . import sort
+import sort
 import os
 import unittest
 

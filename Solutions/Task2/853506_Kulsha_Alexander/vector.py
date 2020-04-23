@@ -2,59 +2,81 @@ class SizeError(Exception):
     def __init__(self, msg):
         super(Exception, self).__init__(msg)
 
-class JSON:
-    
-    def __tuple_validity_check(self, t):
-        if type(t) not in [float, int, str, tuple]:
-            raise TypeError("unhashable type")
-        elif type(t) is tuple:
-            for item in t:
-                self.__tuple_validity_check(item) 
-                
-    def __num_to_json(self, obj):
-        return str(obj)
-    
-    def __string_to_json(self, obj):
-        return '"{}"'.format(obj)
-    
-    def __bool_to_json(self, obj):
-        return "true" if obj else "false"
-    
-    def __none_to_json(self, obj):
-        return "null"
-    
-    def __list_to_json(self, obj):
-        return "[{}]".format(", ".join(self.dumps(item) for item in obj))
-                        
-    def __dict_to_json(self, obj):
-        for key in obj.keys(): 
-            self.__tuple_validity_check(key)
-        return "{{{}}}".format(", ".join("{}:{}".format(self.dumps(key), self.dumps(value)) for key, value in obj.items()))
-    
-    def __custom_to_json(self, obj):
-        obj_attr_s = dict()
-        obj_attr_s.update(obj.__dict__)
-        obj_attr_s.update(obj.__class__.__dict__)
-        attrs_updated = dict()
-        for key, value in obj_attr_s.items():
-            if key.startswith('_'):
-                continue;
-            attrs_updated[key] = value if not hasattr(value, '__dict__') else self.__custom_to_json(value) 
-        return self.__dict_to_json(attrs_updated) 
+class Vector:
+    def __init__(self, init_value=None):
+        if init_value is None:
+            self._vector = []
+            self._vector_type = None
+            return
+        if not isinstance(init_value, Iterable):
+            raise TypeError("unable to initialize vector with non iterable object")
+        for item in init_value:
+            if not isinstance(item, type(init_value[0])):
+                raise TypeError("unable to initialize vector with object containing items of different types")
+        self._vector = list(init_value)
+        self._vector_type = type(init_value[0]) 
         
-        
-    def dumps(self, obj):
-        if isinstance(obj, bool):
-            return self.__bool_to_json(obj)
-        elif isinstance(obj, (int, float)):
-            return self.__num_to_json(obj)
-        elif isinstance(obj, str):
-            return self.__string_to_json(obj)
-        elif isinstance(obj, type(None)):
-            return self.__none_to_json(obj)
-        elif isinstance(obj, (list, tuple)):
-            return self.__list_to_json(obj)
-        elif isinstance(obj, dict):
-            return self.__dict_to_json(obj)
+    @property    
+    def size(self):
+        return len(self._vector)
+    
+    def is_empty(self):
+        return True if self.size == 0 else False
+    
+    def __len__(self):
+        return len(self._vector)
+    
+    def __mul__(self, c):
+        if not hasattr(c, '__mul__'):
+            raise TypeError("can't multiply sequence by non-int")
+        return Vector(list(map(lambda item: item * c, self._vector)))
+    
+    def __str__(self):
+        return str(self._vector)
+    
+    def __repr__(self):
+        return "{}".format(str(self))
+    
+    def __add__(self, v2):
+        if not isinstance(v2, Vector):
+            raise TypeError("unable to add object of type different from Vector")
+        if self.size != v2.size:
+            raise SizeError("unable to add vector of different size")
+        return Vector([a + b for a, b in zip(self._vector, v2._vector)])
+   
+    def inner_product(self, v2):
+        if not isinstance(v2, Vector):
+            raise TypeError("unable to add object of type different from Vector")
+        if self.size != v2.size:
+            raise SizeError("unable to get inner product of vectors of different size")
+        sum = 0
+        for a, b in zip(self._vector, v2._vector):
+            sum += (a * b)
+        return sum    
+    
+    def __sub__(self, v2):
+        if not isinstance(v2, Vector):
+            raise TypeError("unable to add object of type different from Vector")
+        if self.size != v2.size:
+            raise SizeError("unable to add vector of different size")
+        return Vector([a - b for a, b in zip(self._vector, v2._vector)])
+    
+    def __eq__(self, v2):
+        if self.size != v2.size:
+            return False
+        for a, b in zip(self._vector, v2._vector):
+            if a != b: 
+                return False
+        return True    
+    
+    def __getitem__(self, index):
+        return self._vector[index]
+    
+    def __setitem__(self, index, value):
+        if isinstance(value, self._vector_type):
+            self._vector[index] = value
         else:
-            return self.__custom_to_json(obj)
+            raise TypeError("unable to add object of type different from Vector")
+    
+    def clear(self):
+        self._vector = []
